@@ -49,9 +49,9 @@ class Watcher:
                 combined_img = self.onnx_detector.draw_detections(img)
                 combined_img = self.onnx_detector.blur_boxes(img)
                 f.write(combined_img.tobytes())
-                im = Image.fromarray(combined_img)
-                image_name = f"doc/img/detected_objects{i}.jpg"
-                im.save(image_name)
-                print(f"saved {image_name}")
+                # im = Image.fromarray(combined_img)
+                # image_name = f"doc/img/detected_objects{i}.jpg"
+                # im.save(image_name)
+                # print(f"saved {image_name}")
         
         os.rename(path, f'completed_{path}')
