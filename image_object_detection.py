@@ -1,22 +1,25 @@
-import cv2
-from imread_from_url import imread_from_url
-
 from yolov8 import YOLOv8
+from PIL import Image
+from numpy import asarray
 
-# Initialize yolov8 object detector
-model_path = "models/yolov8m.onnx"
-yolov8_detector = YOLOv8(model_path, conf_thres=0.2, iou_thres=0.3)
+import cv2
+import glob
 
-# Read image
-img_url = "https://live.staticflickr.com/13/19041780_d6fd803de0_3k.jpg"
-img = imread_from_url(img_url)
+onnx_new_model_path = "privacy2-s1.onnx"
+images_folder = "pic/*"
+yolov8_detector = YOLOv8(onnx_new_model_path, conf_thres=0.2, iou_thres=0.3)
 
-# Detect Objects
-boxes, scores, class_ids = yolov8_detector(img)
+images = []
+for f in glob.iglob(images_folder):
+    img = cv2.imread(f, cv2.COLOR_BGR2RGB)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    images.append(img)
 
-# Draw detections
-combined_img = yolov8_detector.draw_detections(img)
-cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
-cv2.imshow("Detected Objects", combined_img)
-cv2.imwrite("doc/img/detected_objects.jpg", combined_img)
-cv2.waitKey(0)
+for i, img in enumerate(images):
+    boxes, scores, classe_ids = yolov8_detector(img)
+    # combined_img = yolov8_detector.draw_detections(img)
+    combined_img = yolov8_detector.blur_boxes(img)
+    im = Image.fromarray(combined_img)
+    image_name = f"doc/img/detected_objects{i}.jpg"
+    im.save(image_name)
+    print(f"saved {image_name}")

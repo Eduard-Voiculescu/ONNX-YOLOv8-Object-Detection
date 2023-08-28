@@ -2,12 +2,12 @@ import time
 import cv2
 import numpy as np
 import onnxruntime
+import constant
 
 from yolov8.utils import xywh2xyxy, nms, draw_detections
 
 
 class YOLOv8:
-
     def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
@@ -22,6 +22,8 @@ class YOLOv8:
         self.session = onnxruntime.InferenceSession(path,
                                                     providers=['CUDAExecutionProvider',
                                                                'CPUExecutionProvider'])
+        # sess_options = onnxruntime.SessionOptions()
+        # print("number of threads: " + str(sess_options.intra_op_num_threads))
         # Get model info
         self.get_input_details()
         self.get_output_details()
@@ -43,6 +45,8 @@ class YOLOv8:
         input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Resize input image
+        self.input_width = 960
+        self.input_height = 960
         input_img = cv2.resize(input_img, (self.input_width, self.input_height))
 
         # Scale input pixel values to 0 to 1
@@ -95,7 +99,6 @@ class YOLOv8:
         return boxes
 
     def rescale_boxes(self, boxes):
-
         # Rescale boxes to original image dimensions
         input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
         boxes = np.divide(boxes, input_shape, dtype=np.float32)
@@ -103,9 +106,33 @@ class YOLOv8:
         return boxes
 
     def draw_detections(self, image, draw_scores=True, mask_alpha=0.4):
-
         return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha)
+
+    def blur_boxes(self, img):
+        print("Number of boxes", len(self.boxes))
+        for i, class_id in enumerate(self.class_ids):
+            detected_label = constant.CLASS_NAMES[class_id]
+            if detected_label != 'license-plate' or detected_label != 'face': 
+                continue
+            
+            h, w = img.shape[:2]
+            kernel_width = (w // 7) | 1
+            kernel_height = (h // 7) | 1
+
+            box = self.boxes[i]
+            print(f"box [{i}] content: {box} ")
+            start_x, start_y, end_x, end_y = box.astype(np.int64)
+            detected_label = img[start_y: end_y, start_x: end_x]
+            try: 
+                blurred_detected_label = cv2.GaussianBlur(detected_label, (kernel_width, kernel_height), 0)
+                img[start_y: end_y, start_x: end_x] = blurred_detected_label
+            except:
+                # do nothing for the moment
+                print("exception occurred")
+
+
+        return img
 
     def get_input_details(self):
         model_inputs = self.session.get_inputs()
@@ -120,22 +147,22 @@ class YOLOv8:
         self.output_names = [model_outputs[i].name for i in range(len(model_outputs))]
 
 
-if __name__ == '__main__':
-    from imread_from_url import imread_from_url
+# if __name__ == '__main__':
+#     from imread_from_url import imread_from_url
 
-    model_path = "../models/yolov8m.onnx"
+#     model_path = "../models/yolov8m.onnx"
 
-    # Initialize YOLOv7 object detector
-    yolov7_detector = YOLOv8(model_path, conf_thres=0.3, iou_thres=0.5)
+#     # Initialize YOLOv7 object detector
+#     yolov7_detector = YOLOv8(model_path, conf_thres=0.3, iou_thres=0.5)
 
-    img_url = "https://live.staticflickr.com/13/19041780_d6fd803de0_3k.jpg"
-    img = imread_from_url(img_url)
+#     img_url = "https://live.staticflickr.com/13/19041780_d6fd803de0_3k.jpg"
+#     img = imread_from_url(img_url)
 
-    # Detect Objects
-    yolov7_detector(img)
+#     # Detect Objects
+#     yolov7_detector(img)
 
-    # Draw detections
-    combined_img = yolov7_detector.draw_detections(img)
-    cv2.namedWindow("Output", cv2.WINDOW_NORMAL)
-    cv2.imshow("Output", combined_img)
-    cv2.waitKey(0)
+#     # Draw detections
+#     combined_img = yolov7_detector.draw_detections(img)
+#     cv2.namedWindow("Output", cv2.WINDOW_NORMAL)
+#     cv2.imshow("Output", combined_img)
+#     cv2.waitKey(0)
