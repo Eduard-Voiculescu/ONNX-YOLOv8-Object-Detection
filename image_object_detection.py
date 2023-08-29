@@ -1,9 +1,7 @@
 from yolov8 import YOLOv8
 from PIL import Image
-from numpy import asarray
 
 import cv2
-import glob
 import os
 
 onnx_new_model_path = "privacy2-s1.onnx"

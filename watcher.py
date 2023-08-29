@@ -1,6 +1,5 @@
 from yolov8 import YOLOv8
 from PIL import Image
-from numpy import asarray
 
 import cv2
 import io
@@ -8,6 +7,7 @@ import inotify.adapters
 import inotify.constants
 import ml_metadata
 import os
+import time
 
 
 class Watcher:
@@ -29,6 +29,7 @@ class Watcher:
             if type_names[0] == 'IN_CREATE':
                 new_folder_path = os.path.join(path, name)
                 if os.path.isdir(new_folder_path) and name[0] != r'_':
+                    time.sleep(1)
                     print(f'Processing new folder {new_folder_path}')
                     self._process_folder(name, new_folder_path)
                     print("byeeeee")
