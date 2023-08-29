@@ -3,20 +3,30 @@ import cv2
 import numpy as np
 import onnxruntime
 import constant
+import ml_metadata
+import logging
 
-from yolov8.utils import xywh2xyxy, nms, draw_detections
+from yolov8.utils import xywh2xyxy, xyxyxywh2, nms
+from yolov8.draw import draw_detections
 
 
 class YOLOv8:
-    def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
+    input_height = int
+    input_width = int
+    logger: logging.Logger
+
+    def __init__(self, path, logger: logging.Logger, input_height: int, input_width: int, conf_thres=0.7, iou_thres=0.5):
+        self.logger = logger
+        self.input_height = input_height
+        self.input_width = input_width
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
 
         # Initialize model
         self.initialize_model(path)
 
-    def __call__(self, image):
-        return self.detect_objects(image)
+    def __call__(self, image, img_ml_data):
+        return self.detect_objects(image, img_ml_data)
 
     def initialize_model(self, path):
         self.session = onnxruntime.InferenceSession(path,
@@ -29,25 +39,27 @@ class YOLOv8:
         self.get_output_details()
 
 
-    def detect_objects(self, image):
-        input_tensor = self.prepare_input(image)
+    def detect_objects(self, image, ml_frame_data: ml_metadata.MLFrameData):
+        input_tensor = self.prepare_input(image, ml_frame_data)
 
         # Perform inference on the image
-        outputs = self.inference(input_tensor)
+        outputs = self.inference(input_tensor, ml_frame_data)
 
-        self.boxes, self.scores, self.class_ids = self.process_output(outputs)
+        self.boxes, self.scores, self.class_ids = self.process_output(outputs, ml_frame_data)
 
         return self.boxes, self.scores, self.class_ids
 
-    def prepare_input(self, image):
+    def prepare_input(self, image, ml_frame_data: ml_metadata.MLFrameData):
         self.img_height, self.img_width = image.shape[:2]
 
         input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Resize input image
-        self.input_width = 960
-        self.input_height = 960
+        start = time.perf_counter()
         input_img = cv2.resize(input_img, (self.input_width, self.input_height))
+        resize_time = (time.perf_counter() - start) * 1000
+        ml_frame_data.set_resizing_time(resize_time)
+        self.logger.debug(f'Resizing time: {resize_time}ms')
 
         # Scale input pixel values to 0 to 1
         input_img = input_img / 255.0
@@ -56,15 +68,17 @@ class YOLOv8:
 
         return input_tensor
 
-
-    def inference(self, input_tensor):
+    def inference(self, input_tensor, ml_frame_data: ml_metadata.MLFrameData):
         start = time.perf_counter()
-        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
 
-        # print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
+        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
+        inf_time = (time.perf_counter() - start) * 1000
+        ml_frame_data.set_inference_time(inf_time)
+        self.logger.info(f'Inference time: {inf_time}ms')
+
         return outputs
 
-    def process_output(self, output):
+    def process_output(self, output, ml_frame_data: ml_metadata.MLFrameData):
         predictions = np.squeeze(output[0]).T
 
         # Filter out object confidence scores below threshold
@@ -109,7 +123,8 @@ class YOLOv8:
         return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha)
 
-    def blur_boxes(self, img):
+    def blur_boxes(self, img, ml_frame_data: ml_metadata.MLFrameData):
+        start = time.perf_counter()
         for i, class_id in enumerate(self.class_ids):
             detected_label = constant.CLASS_NAMES[class_id]
             if detected_label != 'license-plate' or detected_label != 'face':
@@ -120,7 +135,6 @@ class YOLOv8:
             kernel_height = (h // 7) | 1
 
             box = self.boxes[i]
-            print(f"box [{i}] content: {box} ")
             start_x, start_y, end_x, end_y = box.astype(np.int64)
             detected_label = img[start_y: end_y, start_x: end_x]
             try: 
@@ -130,6 +144,9 @@ class YOLOv8:
                 # do nothing for the moment
                 print("exception occurred")
 
+        blurring_time = (time.perf_counter() - start) * 1000
+        ml_frame_data.set_blurring_time(blurring_time)
+        self.logger.debug(f'Blurring time: {blurring_time}ms')
 
         return img
 
@@ -138,8 +155,8 @@ class YOLOv8:
         self.input_names = [model_inputs[i].name for i in range(len(model_inputs))]
 
         self.input_shape = model_inputs[0].shape
-        self.input_height = self.input_shape[2]
-        self.input_width = self.input_shape[3]
+        # self.input_height = self.input_shape[2]
+        # self.input_width = self.input_shape[3]
 
     def get_output_details(self):
         model_outputs = self.session.get_outputs()

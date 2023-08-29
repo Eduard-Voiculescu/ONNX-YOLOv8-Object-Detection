@@ -10,8 +10,9 @@ import watcher
 
 def main(args):
     arg_parser = ArgumentParser(prog=__file__, add_help=False)
-    arg_parser.add_argument('-l', '--log-level', default='INFO',
-                                  help='set log level')
+    arg_parser.add_argument('-l', '--log-level', default='INFO', help='set log level')
+    arg_parser.add_argument('-h', '--input-height', default='960', help='set input height for model')
+    arg_parser.add_argument('-w', '--input-width', default='960', help='set input wisdth for model')
     args, _ = arg_parser.parse_known_args(args)
 
     try:
@@ -24,8 +25,8 @@ def main(args):
     logger.info("Log level set: {}"
                 .format(logging.getLevelName(logger.getEffectiveLevel())))
 
-    yolov8_detector = YOLOv8(constant.ONNX_MODEL_PATH, conf_thres=0.2, iou_thres=0.3)
-    logging.info('model {constant.ONNX_MODEL_PATH} initialized...')
+    yolov8_detector = YOLOv8(constant.ONNX_MODEL_PATH, logger, int(args.input_height), int(args.input_width), conf_thres=0.2, iou_thres=0.3)
+    logging.info(f'model {constant.ONNX_MODEL_PATH} with input height: {args.input_height} input width: {args.input_height} initialized...')
     w = watcher.Watcher(yolov8_detector, logger)
     w.add_watch(constant.UNPROCESSED_FRAMEKM)
 
