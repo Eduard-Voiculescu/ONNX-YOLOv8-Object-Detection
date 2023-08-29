@@ -110,10 +110,9 @@ class YOLOv8:
                                self.class_ids, mask_alpha)
 
     def blur_boxes(self, img):
-        print("Number of boxes", len(self.boxes))
         for i, class_id in enumerate(self.class_ids):
             detected_label = constant.CLASS_NAMES[class_id]
-            if detected_label != 'license-plate' or detected_label != 'face': 
+            if detected_label != 'license-plate' or detected_label != 'face':
                 continue
             
             h, w = img.shape[:2]

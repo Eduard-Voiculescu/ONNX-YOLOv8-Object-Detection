@@ -18,7 +18,7 @@ class MLData:
     class_id: str
     confidence: float
     bounding_box: BoundingBox
-    name: str
+    name: str  # the name of the json that this framekm is pointing to
 
     def __init__(self):
         self.resizing_time = 0.0

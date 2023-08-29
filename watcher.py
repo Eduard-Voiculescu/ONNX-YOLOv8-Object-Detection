@@ -3,7 +3,7 @@ from PIL import Image
 from numpy import asarray
 
 import cv2
-import glob
+import io
 import inotify.adapters
 import inotify.constants
 import ml_metadata
@@ -24,34 +24,44 @@ class Watcher:
     def run(self): 
         for event in self.notifier.event_gen(yield_nones=False):
             (_, type_names, path, name) = event
-            print(event)
+            print("event", event)
 
             if type_names[0] == 'IN_CREATE':
                 new_folder_path = os.path.join(path, name)
-                if os.path.isdir(new_folder_path) and 'completed' not in new_folder_path:
+                if os.path.isdir(new_folder_path) and name[0] != r'_':
+                    print(f'Processing new folder {new_folder_path}')
                     self._process_folder(name, new_folder_path)
+                    print("byeeeee")
+                
+                if os.path.isdir(new_folder_path) and 'completed' in name:
+                    print(f'completed folder {name}, pack, delete and write to /mnt/data/framekm path')
 
-    def _process_folder(self, name: str, path: str):
-        framekm_name = f'bin_{name}'
+    def _process_folder(self, name: str, new_folder_path: str):
+        framekm_name = os.path.join(new_folder_path, f'bin_{name}') 
         images = []
-        for f in glob.iglob(path):
-            print('file name', f)
-            img = cv2.imread(f, cv2.COLOR_BGR2RGB)
+        print("folder path", new_folder_path)
+        print(os.listdir(new_folder_path))
+        for f in os.listdir(new_folder_path):
+            p = os.path.join(new_folder_path, f)
+            print('file name', p)
+            img = cv2.imread(p, cv2.COLOR_BGR2RGB)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             images.append(img)
-
-        with open(f'{framekm_name}', 'r+b') as f:
-            metadata = ml_metadata.MLMetadata()
-            for i, img in enumerate(images):
-                img_ml_data = ml_metadata.MLData()
+        
+        with open(f'{framekm_name}', 'ab') as f:
+            metadata = ml_metadata.MLMetadata()  # for all the frames in a packed framekm
+            for img in images:
+                img_ml_data = ml_metadata.MLData()  # for all the boxes of an image
 
                 boxes, scores, classe_ids = self.onnx_detector(img)
                 combined_img = self.onnx_detector.draw_detections(img)
                 combined_img = self.onnx_detector.blur_boxes(img)
-                f.write(combined_img.tobytes())
-                # im = Image.fromarray(combined_img)
-                # image_name = f"doc/img/detected_objects{i}.jpg"
-                # im.save(image_name)
-                # print(f"saved {image_name}")
+                
+                im = Image.fromarray(combined_img)
+                img_byte_arr = io.BytesIO()
+                im.save(img_byte_arr, format='JPEG')
+                img_byte_arr = img_byte_arr.getvalue()
+
+                f.write(img_byte_arr)
         
-        os.rename(path, f'completed_{path}')
+        # os.rename(new_folder_path, f'completed_{path}')
