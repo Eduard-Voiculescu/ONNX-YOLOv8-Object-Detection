@@ -41,7 +41,7 @@ The original YOLOv8 model can be found in this repository: [YOLOv8 Repository](h
 
 # Run the ONNX model
 ```bash
-python main.py --model-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx --show-detection True --unprocessed-framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/unprocessed_framekm --framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/framekm --ml-metadata-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/ml_metadata --model-hash-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx.hash
+python main.py --model-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx --show-detection True --unprocessed-framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/unprocessed_framekm --framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/framekm --metadata-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/metadata --ml-metadata-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/ml_metadata --model-hash-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx.hash
 ```
 
 # Examples

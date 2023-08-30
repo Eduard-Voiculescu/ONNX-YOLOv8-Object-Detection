@@ -6,6 +6,7 @@ import cv2
 import io
 import inotify.adapters
 import inotify.constants
+import json
 import logging
 import yolov8.ml_metadata as ml_metadata
 import yolov8.utils
@@ -17,13 +18,15 @@ class Watcher:
     notifier: inotify.adapters.Inotify
     onnx_detector: YOLOv8
     framekm_path: str
+    metadata_path: str
     ml_metadata_path: str
     logger: logging.Logger
 
-    def __init__(self, detector: YOLOv8, framekm_path: str, ml_metadata_path: str, logger: logging.Logger):
+    def __init__(self, detector: YOLOv8, framekm_path: str, metadata_path: str, ml_metadata_path: str, logger: logging.Logger):
         self.notifier = inotify.adapters.Inotify()
         self.onnx_detector = detector
         self.framekm_path = framekm_path
+        self.metadata_path = metadata_path
         self.ml_metadata_path = ml_metadata_path
         self.logger = logger
 
@@ -60,6 +63,8 @@ class Watcher:
     def _process_folder(self, name: str, orig_path: str, new_folder_path: str):
         framekm_name = os.path.join(new_folder_path, f'bin_{name}') 
         frames = []
+        frames_sizes = []
+        total_processed_frame_size = 0.0
         for f in os.listdir(new_folder_path):
             p = os.path.join(new_folder_path, f)
             self.logger.debug(f'file name {p}')
@@ -90,6 +95,9 @@ class Watcher:
                 img_byte_arr = io.BytesIO()
                 im.save(img_byte_arr, format='JPEG')
                 img_byte_arr = img_byte_arr.getvalue()
+                size_of_processed_image = len(img_byte_arr)
+                frames_sizes.append(size_of_processed_image)  # need to store this on the metadata json file
+                total_processed_frame_size += size_of_processed_image
 
                 f.write(img_byte_arr)
 
@@ -97,6 +105,12 @@ class Watcher:
                 img_ml_data.name = f'{name}.json'
 
                 privacy_ml_metadata.frame_data.append(img_ml_data)
+
+            with open(os.path.join(self.metadata_path, name), 'w+') as f:
+                original_content = json.loads(f.read())
+                for i, size in enumerate(frames_sizes):
+                    pass
+                pass
 
             privacy_ml_metadata.model_hash = self.onnx_detector.model_hash
             metadata = ml_metadata.MLMetadata()

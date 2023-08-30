@@ -16,6 +16,7 @@ def main(args):
     arg_parser.add_argument('--show-detection', default=False, help='set if we want to draw detections or not')
     arg_parser.add_argument('--unprocessed-framekm-path', default='/mnt/data/unprocessed_framekm', help='set the path for the unprocessed framekm')
     arg_parser.add_argument('--framekm-path', default='/mnt/data/framekm', help='set the path for the processed framekm')
+    arg_parser.add_argument('--metadata-path', default='/mnt/data/metadata', help='set the path for the processed framekm metadata')
     arg_parser.add_argument('--ml-metadata-path', default='/mnt/data/ml_metadata', help='set the path for the processed framekm ML metadata')
     arg_parser.add_argument('--model-hash-path', default='/mnt/data/models/pvc.onnx.hash', help='set the path for the hash of the model')
     args, _ = arg_parser.parse_known_args(args)
@@ -33,10 +34,11 @@ def main(args):
 
     unprocessed_framekm_path = args.unprocessed_framekm_path
     framekm_path = args.framekm_path
+    metadata_path = args.metadata_path
     ml_metadata_path = args.ml_metadata_path
 
     yolov8_detector = YOLOv8(args.model_path, logger, int(args.input_height), int(args.input_width), args.show_detection, args.model_hash_path, conf_thres=0.2, iou_thres=0.3)
-    w = watcher.Watcher(yolov8_detector, framekm_path, ml_metadata_path, logger)
+    w = watcher.Watcher(yolov8_detector, framekm_path, metadata_path, ml_metadata_path, logger)
     w.add_watch(unprocessed_framekm_path)
 
     try:
