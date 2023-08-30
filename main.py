@@ -1,11 +1,10 @@
 from argparse import ArgumentParser
 from yolov8 import YOLOv8
 
-import constant
 import inotify.adapters
 import logging
 import sys
-import watcher
+import yolov8.watcher as watcher
 
 
 def main(args):

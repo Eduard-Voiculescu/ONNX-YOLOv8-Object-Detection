@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-import constant
+import yolov8.constant as constant
 
 
 # Create a list of colors for each class where each color is a tuple of 3 integer values

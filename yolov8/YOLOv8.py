@@ -2,8 +2,8 @@ import time
 import cv2
 import numpy as np
 import onnxruntime
-import constant
-import ml_metadata
+import yolov8.constant as constant
+import yolov8.ml_metadata as ml_metadata
 import logging
 
 from yolov8.utils import xywh2xyxy, xyxyxywh2, nms

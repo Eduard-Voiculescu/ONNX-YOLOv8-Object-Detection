@@ -1,14 +1,13 @@
 from yolov8 import YOLOv8
 from PIL import Image
 
-import constant
+import yolov8.constant as constant
 import cv2
-import json
 import io
 import inotify.adapters
 import inotify.constants
 import logging
-import ml_metadata
+import yolov8.ml_metadata as ml_metadata
 import yolov8.utils
 import os
 import shutil
@@ -93,12 +92,6 @@ class Watcher:
                 img_byte_arr = img_byte_arr.getvalue()
 
                 f.write(img_byte_arr)
-
-                # TODO: remove this
-                im = Image.fromarray(combined_img)
-                image_name = f"doc/img/detected_objects{j}.jpg"
-                im.save(image_name)
-                # TODO: remove this
 
                 img_ml_data.img_id = img_id
                 img_ml_data.name = f'{name}.json'
