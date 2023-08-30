@@ -4,7 +4,7 @@ from PIL import Image
 import cv2
 import os
 
-onnx_new_model_path = "privacy2-s1.onnx"
+onnx_new_model_path = "devel/models/pvc.onnx"
 images_folder = "devel/unprocessed_framekm/km_20230527_205605_10_0"
 yolov8_detector = YOLOv8(onnx_new_model_path, conf_thres=0.2, iou_thres=0.3)
 
@@ -18,7 +18,7 @@ for f in os.listdir(images_folder):
 for i, img in enumerate(images):
     boxes, scores, classe_ids = yolov8_detector(img)
     combined_img = yolov8_detector.draw_detections(img)
-    # combined_img = yolov8_detector.blur_boxes(img)
+    combined_img = yolov8_detector.blur_boxes(combined_img)
     im = Image.fromarray(combined_img)
     image_name = f"doc/img/detected_objects{i}.jpg"
     im.save(image_name)

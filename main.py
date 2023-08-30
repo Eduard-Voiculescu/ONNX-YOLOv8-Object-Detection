@@ -36,10 +36,6 @@ def main(args):
     framekm_path = args.framekm_path
     ml_metadata_path = args.ml_metadata_path
 
-    print('unprocessed_framekm_path', unprocessed_framekm_path)
-    print('framekm_path', framekm_path)
-    print('ml_metadata_path', ml_metadata_path)
-
     yolov8_detector = YOLOv8(args.model_path, logger, int(args.input_height), int(args.input_width), args.show_detection, args.model_hash_path, conf_thres=0.2, iou_thres=0.3)
     w = watcher.Watcher(yolov8_detector, framekm_path, ml_metadata_path, logger)
     w.add_watch(unprocessed_framekm_path)

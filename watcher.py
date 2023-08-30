@@ -85,7 +85,7 @@ class Watcher:
                     img_ml_data.detections.append(bounding_box)
 
                 combined_img = self.onnx_detector.draw_detections(img)
-                combined_img = self.onnx_detector.blur_boxes(img, img_ml_data)
+                combined_img = self.onnx_detector.blur_boxes(combined_img, img_ml_data)
                 
                 im = Image.fromarray(combined_img)
                 img_byte_arr = io.BytesIO()
@@ -95,6 +95,7 @@ class Watcher:
                 f.write(img_byte_arr)
 
                 # TODO: remove this
+                im = Image.fromarray(combined_img)
                 image_name = f"doc/img/detected_objects{j}.jpg"
                 im.save(image_name)
                 # TODO: remove this

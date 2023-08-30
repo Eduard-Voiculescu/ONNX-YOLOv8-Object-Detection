@@ -123,34 +123,35 @@ class YOLOv8:
         input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
         boxes = np.divide(boxes, input_shape, dtype=np.float32)
         boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
+
         return boxes
 
     def draw_detections(self, image, draw_scores=True, mask_alpha=0.4):
         if self.show_detections:
             return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha)
+
         return image
 
     def blur_boxes(self, img, ml_frame_data: ml_metadata.MLFrameData):
         start = time.perf_counter()
         for i, class_id in enumerate(self.class_ids):
             detected_label = constant.CLASS_NAMES[class_id]
-            if detected_label != 'license-plate' or detected_label != 'face':
-                continue
             
-            h, w = img.shape[:2]
-            kernel_width = (w // 7) | 1
-            kernel_height = (h // 7) | 1
+            if detected_label == 'license-plate' or detected_label == 'face':
+                h, w = img.shape[:2]
+                kernel_width = (w // 7) | 1
+                kernel_height = (h // 7) | 1
 
-            box = self.boxes[i]
-            start_x, start_y, end_x, end_y = box.astype(np.int64)
-            detected_label = img[start_y: end_y, start_x: end_x]
-            try: 
-                blurred_detected_label = cv2.GaussianBlur(detected_label, (kernel_width, kernel_height), 0)
-                img[start_y: end_y, start_x: end_x] = blurred_detected_label
-            except:
-                # do nothing for the moment
-                print("exception occurred")
+                box = self.boxes[i]
+                start_x, start_y, end_x, end_y = box.astype(np.int64)
+                detected_label = img[start_y: end_y, start_x: end_x]
+                try: 
+                    blurred_detected_label = cv2.GaussianBlur(detected_label, (kernel_width, kernel_height), 0)
+                    img[start_y: end_y, start_x: end_x] = blurred_detected_label
+                except:
+                    self.logger.info("exception occurred when blurring boxes, ignoring...")
+            
 
         blurring_time = (time.perf_counter() - start) * 1000
         ml_frame_data.set_blurring_time(blurring_time)
