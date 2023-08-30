@@ -17,11 +17,15 @@ import shutil
 class Watcher:
     notifier: inotify.adapters.Inotify
     onnx_detector: YOLOv8
+    framekm_path: str
+    ml_metadata_path: str
     logger: logging.Logger
 
-    def __init__(self, detector: YOLOv8, logger: logging.Logger):
+    def __init__(self, detector: YOLOv8, framekm_path: str, ml_metadata_path: str, logger: logging.Logger):
         self.notifier = inotify.adapters.Inotify()
         self.onnx_detector = detector
+        self.framekm_path = framekm_path
+        self.ml_metadata_path = ml_metadata_path
         self.logger = logger
 
     def add_watch(self, path: str):
@@ -40,7 +44,7 @@ class Watcher:
                     self.logger.debug(f"done processing folder: {new_path}")
                 
                 if os.path.isfile(new_path) and 'km_completed_' in name:
-                    renamed_path = os.path.join(constant.FRAMEKM, name.replace('km_completed_', ''))
+                    renamed_path = os.path.join(self.framekm_path, name.replace('km_completed_', ''))
                     self.logger.debug(f'path file {path}')
                     self.logger.debug(f'new_path {new_path}')
                     self.logger.debug(f'renamed_path {renamed_path}')
@@ -48,8 +52,9 @@ class Watcher:
                     self.logger.info(f'{new_path} moved to {renamed_path}')
                 
                 if os.path.isfile(new_path) and 'metadata_ml_completed_' in name:
-                    self.logger.info(f'completed ml {name}')
-                    renamed_path = os.path.join(constant.ML_FRAMEKM_METADATA_JSON, name.replace('metadata_ml_completed_', '') + '.json')
+                    self.logger.debug(f'completed ml {name}')
+                    renamed_path = os.path.join(self.ml_metadata_path, name.replace('metadata_ml_completed_', '') + '.json')
+                    self.logger.debug(f'renamed_path {renamed_path}')
                     os.rename(new_path, renamed_path)
                     self.logger.info(f'{new_path} moved to {renamed_path}')
 
@@ -64,11 +69,10 @@ class Watcher:
             frames.append((p, img))
         
         with open(f'{framekm_name}', 'ab') as f:
-            metadata = ml_metadata.MLMetadata()  # for all the frames in a packed framekm
-            for val in frames:
+            privacy_ml_metadata = ml_metadata.GenericMLMetadata()  # for all the frames in a packed framekm
+            for j, val in enumerate(frames):
                 img_id = val[0]
                 img = val[1]
-
                 img_ml_data = ml_metadata.MLFrameData()  # for all the boxes of an image
                 
                 boxes, scores, classe_ids = self.onnx_detector(img, img_ml_data)
@@ -90,16 +94,24 @@ class Watcher:
 
                 f.write(img_byte_arr)
 
+                # TODO: remove this
+                image_name = f"doc/img/detected_objects{j}.jpg"
+                im.save(image_name)
+                # TODO: remove this
+
                 img_ml_data.img_id = img_id
                 img_ml_data.name = f'{name}.json'
 
-                metadata.ml_frame_data.append(img_ml_data)
+                privacy_ml_metadata.frame_data.append(img_ml_data)
 
+            privacy_ml_metadata.model_hash = self.onnx_detector.model_hash
+            metadata = ml_metadata.MLMetadata()
+            metadata.privacy = privacy_ml_metadata
             metadata_path = os.path.join(orig_path, f'metadata_ml_completed_{name}')
+
             with open(metadata_path, 'w') as f:
                 f.write(metadata.toJson())
-        
-        # TODO: write metadata to disk
+
         self.logger.info(f'moving and cleaning up directories and files for {name}')
         framkm_name_orig_path = os.path.join(orig_path, f'km_completed_{name}')
         os.rename(framekm_name, framkm_name_orig_path)

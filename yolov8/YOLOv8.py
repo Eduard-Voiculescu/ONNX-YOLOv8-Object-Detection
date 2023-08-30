@@ -14,13 +14,19 @@ class YOLOv8:
     input_height = int
     input_width = int
     logger: logging.Logger
+    show_detections: bool
+    model_hash: str
 
-    def __init__(self, path, logger: logging.Logger, input_height: int, input_width: int, conf_thres=0.7, iou_thres=0.5):
+    def __init__(self, path, logger: logging.Logger, input_height: int, input_width: int, show_detections: bool, model_hash_path: str, conf_thres=0.7, iou_thres=0.5):
         self.logger = logger
         self.input_height = input_height
         self.input_width = input_width
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
+        self.show_detections = show_detections
+
+        with open(model_hash_path) as f:
+            self.model_hash = f.readlines()[0]
 
         # Initialize model
         self.initialize_model(path)
@@ -120,8 +126,10 @@ class YOLOv8:
         return boxes
 
     def draw_detections(self, image, draw_scores=True, mask_alpha=0.4):
-        return draw_detections(image, self.boxes, self.scores,
+        if self.show_detections:
+            return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha)
+        return image
 
     def blur_boxes(self, img, ml_frame_data: ml_metadata.MLFrameData):
         start = time.perf_counter()

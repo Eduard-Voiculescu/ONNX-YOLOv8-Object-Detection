@@ -39,6 +39,11 @@ model.export(format="onnx", imgsz=[480,640])
 The original YOLOv8 model can be found in this repository: [YOLOv8 Repository](https://github.com/ultralytics/ultralytics)
 - The License of the models is GPL-3.0 license: [License](https://github.com/ultralytics/ultralytics/blob/main/LICENSE)
 
+# Run the ONNX model
+```bash
+python main.py --model-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx --show-detection True --unprocessed-framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/unprocessed_framekm --framekm-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/framekm --ml-metadata-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/ml_metadata --model-hash-path /home/ed/git/ONNX-YOLOv8-Object-Detection/devel/models/pvc.onnx.hash
+```
+
 # Examples
 
  * **Image inference**:

@@ -35,7 +35,6 @@ class MLFrameData:
     resizing_time: float
     inference_time: float
     blurring_time: float
-    hash: str  ## TODO add the hash of the model weights??
     detections: [BoundingBox]
     img_id: str
     name: str  # the name of the json that this framekm is pointing to
@@ -44,7 +43,6 @@ class MLFrameData:
         self.resizing_time = 0.0
         self.inference_time = 0.0
         self.blurring_time = 0.0
-        self.hash = ''
         self.detections = []
         self.img_id = ''
         self.name = ''
@@ -57,16 +55,28 @@ class MLFrameData:
     
     def set_blurring_time(self, blurring_time):
         self.blurring_time = float(blurring_time)
-    
-    def set_hash(self, hash):
-        self.hash = str(hash)
+
+
+class GenericMLMetadata:
+    model_hash: str
+    frame_data: [MLFrameData]
+
+    def __init__(self):
+        self.model_hash = ''
+        self.frame_data = []
+
+    def set_model_hash(self, model_hash):
+        self.model_hash = str(model_hash)
 
 
 class MLMetadata:
-    ml_frame_data: [MLFrameData]
+    privacy: GenericMLMetadata
 
     def __init__(self):
-        self.ml_frame_data = []
+        self.privacy = None
+
+    def set_privacy(self, privacy):
+        self.privacy = privacy
 
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__)
